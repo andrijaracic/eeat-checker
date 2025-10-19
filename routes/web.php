@@ -5,6 +5,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\IsActiveUser;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\CheckController;
+
 
 // Public ruta
 Route::get('/', function () {
@@ -14,6 +16,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', IsActiveUser::class])->group(function () {
      Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
+     Route::get('/dashboard', [CheckController::class, 'index'])->name('dashboard');
+    Route::post('/checks', [CheckController::class, 'store'])->name('checks.store');
 
     // Profile rute
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
