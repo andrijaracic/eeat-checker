@@ -6,37 +6,41 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Check;
 use App\Jobs\ProcessCheck;
+use App\Services\ArticleFetcher;
 
 class CheckController extends Controller
 {
-    // Prikaz svih provera korisnika (dashboard)
+    
     public function index()
     {
         $checks = Auth::user()->checks()->latest()->paginate(10);
         return view('dashboard', compact('checks'));
     }
 
-    // Kreiranje nove provere
-    public function store(Request $request)
+    
+    public function store(Request $request, ArticleFetcher $fetcher)
     {
-        // 1. Validacija URL-a
         $validated = $request->validate([
             'url' => 'required|url|max:2000',
         ]);
 
         $user = Auth::user();
 
-        // 2. Kreiranje Check zapisa sa statusom queued
+        // 1️⃣ Pokreni fetch
+        $result = $fetcher->fetch($validated['url']);
+
+        // 2️⃣ Kreiraj Check u bazi
         $check = Check::create([
             'user_id' => $user->id,
             'url' => $validated['url'],
-            'status' => 'queued',
+            'status' => isset($result['error']) ? 'failed' : 'done',
+            'fetched_title' => $result['title'] ?? null,
+            'fetched_author' => $result['author'] ?? null,
+            'fetched_published_at' => $result['published_at'] ?? null,
+            'summary' => $result['content'] ?? null,
+            'error_message' => $result['message'] ?? null,
         ]);
 
-        // 3. Pokretanje ProcessCheck job-a
-        
-
-        // 4. Redirekcija nazad sa porukom
-        return redirect()->route('dashboard')->with('success', 'Check je kreiran i poslat na obradu.');
+        return redirect()->route('dashboard')->with('success', 'Check je kreiran.');
     }
 }
